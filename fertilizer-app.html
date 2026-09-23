@@ -102,6 +102,7 @@
   .btn-addfert{width:100%; margin-top:16px; background:var(--fertilizer-button); color:#fff; border:none; border-radius:26px; padding:15px; font-weight:700; font-size:16px; cursor:pointer;}
 
   .sticky-bottom{position:sticky; bottom:0; background:var(--brown-deep); padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));}
+  .sticky-bottom.is-hidden{display:none;}
   .btn-primary{width:100%; background:var(--olive); border:none; border-radius:26px; padding:16px; font-weight:700; font-size:16px; cursor:pointer; color:var(--brown-deep); font-family:inherit;}
   .btn-primary:disabled{opacity:.65; cursor:not-allowed;}
 
@@ -297,7 +298,7 @@
       <div id="productList"></div>
       <button class="btn-addfert" onclick="addProduct()">＋ เพิ่มสูตรปุ๋ย</button>
     </div>
-    <div class="sticky-bottom">
+    <div class="sticky-bottom" id="formActions">
       <button class="btn-primary" onclick="showSummary()">ต่อไป</button>
     </div>
   </div>
@@ -656,6 +657,19 @@ function renderNotifications(){
 }
 document.getElementById('searchInput').addEventListener('input', e=>renderList(e.target.value));
 
+const formActions = document.getElementById('formActions');
+document.getElementById('screen-form').addEventListener('focusin', e=>{
+  if(e.target.matches('input, select, textarea')) formActions.classList.add('is-hidden');
+});
+document.getElementById('screen-form').addEventListener('focusout', ()=>{
+  setTimeout(()=>{
+    const active = document.activeElement;
+    if(!active || !active.closest('#screen-form input, #screen-form select, #screen-form textarea')){
+      formActions.classList.remove('is-hidden');
+    }
+  }, 0);
+});
+
 function addProduct(){
   pid++;
   const id = pid;
@@ -671,11 +685,11 @@ function addProduct(){
       <option>46-0-0 กระต่าย</option><option>15-15-15 กระต่าย</option><option>16-16-8 หัววัว</option>
     </select>
     <div class="row-2">
-      <div><label>จำนวน (ตัน)</label><input type="number" class="field p-qty" value="0"></div>
-      <div><label>ราคา (บาท/ตัน)</label><input type="number" class="field p-price" value="0"></div>
+      <div><label>จำนวน (ตัน)</label><input type="number" class="field p-qty"></div>
+      <div><label>ราคา (บาท/ตัน)</label><input type="number" class="field p-price"></div>
     </div>
     <label>หมายเหตุ (ไม่บังคับ)</label>
-    <input class="field p-note" placeholder="เช่น ส่วนลด 100-">
+    <input class="field p-note" placeholder="">
   `;
   document.getElementById('productList').appendChild(div);
 }
