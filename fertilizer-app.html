@@ -125,7 +125,7 @@
   .total-row .lab{font-weight:700;}
   .total-row .amt{font-size:22px; font-weight:800; color:var(--gold);}
   .btn-edit{width:100%; background:var(--brown); color:#fff; border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:20px; cursor:pointer; font-family:inherit; font-size:16px;}
-  .btn-print{width:100%; background:var(--orange); color:var(--brown-deep); border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:12px; cursor:pointer; font-family:inherit; font-size:16px;}
+  .btn-print{width:100%; min-height:48px; background:var(--orange); color:var(--brown-deep); border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:12px; cursor:pointer; touch-action:manipulation; font-family:inherit; font-size:16px;}
   .btn-delete{width:100%; background:none; border:2px solid var(--red); color:var(--red); border-radius:26px; padding:13px; font-weight:700; margin-top:12px; cursor:pointer; font-family:inherit; font-size:16px;}
   .btn-delete:disabled{opacity:.65; cursor:not-allowed;}
   .print-header{display:none;}
@@ -295,6 +295,7 @@
       </div>
 
       <div class="section-title">รายละเอียดสินค้า</div>
+      <datalist id="formulaOptions"></datalist>
       <div id="productList"></div>
       <button class="btn-addfert" onclick="addProduct()">＋ เพิ่มสูตรปุ๋ย</button>
     </div>
@@ -328,8 +329,8 @@
         </table>
         <div class="total-row"><span class="lab">ยอดรวมทั้งหมด</span><span class="amt" id="totalAmt">0.00</span></div>
         <button class="btn-edit" onclick="editCurrentOrder()">✎ แก้ไข</button>
-        <button class="btn-print" onclick="window.print()">🖨 พิมพ์</button>
-        <button class="btn-delete" id="deleteOrderBtn" onclick="deleteCurrentOrder()">🗑️ ลบรายการ</button>
+        <button type="button" class="btn-print" onclick="printSummary()">🖨 พิมพ์</button>
+        <button type="button" class="btn-delete" id="deleteOrderBtn" onclick="deleteCurrentOrder()">🗑️ ลบรายการ</button>
       </div>
     </div>
   </div>
@@ -376,6 +377,7 @@ async function loadRecords(){
     return aTime - bTime;
   });
   renderShopOptions();
+  renderFormulaOptions();
   renderList(document.getElementById('searchInput').value);
   renderNotifications();
 }
@@ -408,6 +410,8 @@ function translateError(message){
     return 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบแทน';
   if(m.includes('email not confirmed'))
     return 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ ตรวจสอบกล่องจดหมายของคุณ';
+  if(m.includes('error sending confirmation email') || m.includes('error sending email'))
+    return 'ระบบส่งอีเมลยืนยันไม่สำเร็จ กรุณาตั้งค่า SMTP ใน Supabase หรือปิดการยืนยันอีเมล แล้วลองใหม่อีกครั้ง';
   if(m.includes('password should be at least') || (m.includes('password') && m.includes('character')))
     return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
   if(m.includes('unable to validate email') || m.includes('invalid email'))
@@ -425,6 +429,20 @@ function renderShopOptions(){
   });
   document.getElementById('shopOptions').innerHTML = [...options]
     .map(name=>`<option value="${escapeHtml(name)}"></option>`)
+    .join('');
+}
+
+function renderFormulaOptions(){
+  const options = new Set(['46-0-0 กระต่าย', '15-15-15 กระต่าย', '16-16-8 หัววัว']);
+  records.forEach(record=>{
+    const products = Array.isArray(record.products) ? record.products : [];
+    products.forEach(product=>{
+      const formula = String(product?.formula || '').trim();
+      if(formula) options.add(formula);
+    });
+  });
+  document.getElementById('formulaOptions').innerHTML = [...options]
+    .map(formula=>`<option value="${escapeHtml(formula)}"></option>`)
     .join('');
 }
 
@@ -680,10 +698,7 @@ function addProduct(){
     <div class="product-head"><span>${document.querySelectorAll('.product-card').length+1}</span>
       <button class="del-btn" onclick="removeProduct(${id})">🗑</button></div>
     <label>สูตรปุ๋ย</label>
-    <select class="field p-formula">
-      <option value="">เลือกสูตรปุ๋ย</option>
-      <option>46-0-0 กระต่าย</option><option>15-15-15 กระต่าย</option><option>16-16-8 หัววัว</option>
-    </select>
+    <input class="field p-formula" list="formulaOptions" placeholder="พิมพ์หรือเลือกสูตรปุ๋ย">
     <div class="row-2">
       <div><label>จำนวน (ตัน)</label><input type="number" class="field p-qty"></div>
       <div><label>ราคา (บาท/ตัน)</label><input type="number" class="field p-price"></div>
@@ -764,6 +779,14 @@ function renderSummary(order){
   document.getElementById('totalAmt').textContent = Number(order.total || 0).toLocaleString(undefined,{minimumFractionDigits:2});
 }
 
+function printSummary(){
+  if(typeof window.print !== 'function'){
+    alert('เบราว์เซอร์นี้ไม่รองรับการพิมพ์ กรุณาเปิดหน้านี้ด้วย Chrome หรือ Safari');
+    return;
+  }
+  window.print();
+}
+
 function showOrderDetail(index){
   const order = records[index];
   if(!order) return;
@@ -771,6 +794,10 @@ function showOrderDetail(index){
   currentOrderId = order.id;
   renderSummary(order);
   goTo('summary');
+}
+
+function hasOrderId(value){
+  return value !== null && value !== undefined && value !== '';
 }
 
 function startNewOrder(){
@@ -786,14 +813,13 @@ function startNewOrder(){
   document.getElementById('productList').innerHTML = '';
   pid = 0;
   addProduct();
-  addProduct();
   const btn = document.querySelector('#screen-form .btn-primary');
   btn.textContent = 'ต่อไป';
   goTo('form');
 }
 
 function editCurrentOrder(){
-  if(!lastOrder || !currentOrderId){
+  if(!lastOrder || !hasOrderId(currentOrderId)){
     alert('ไม่พบข้อมูลรายการที่ต้องการแก้ไข');
     return;
   }
@@ -822,7 +848,7 @@ function editCurrentOrder(){
 
 async function deleteCurrentOrder(){
   const orderId = currentOrderId;
-  if(!orderId){
+  if(!hasOrderId(orderId)){
     alert('ไม่พบรหัสรายการ จึงไม่สามารถลบข้อมูลได้');
     return;
   }
@@ -830,15 +856,22 @@ async function deleteCurrentOrder(){
   const btn = document.getElementById('deleteOrderBtn');
   btn.disabled = true;
   btn.textContent = 'กำลังลบ...';
-  const { error } = await sb
+  const { data: deletedRows, error } = await sb
     .from(TABLE_NAME)
     .delete()
-    .eq('id', orderId);
+    .eq('id', orderId)
+    .select('id');
   if(error){
     btn.disabled = false;
     btn.textContent = '🗑️ ลบรายการ';
     alert('ลบรายการไม่สำเร็จ: ' + translateError(error.message));
     console.error(error);
+    return;
+  }
+  if(!deletedRows?.length){
+    btn.disabled = false;
+    btn.textContent = '🗑️ ลบรายการ';
+    alert('ลบรายการไม่สำเร็จ: ไม่พบรายการหรือไม่มีสิทธิ์ลบข้อมูลในฐานข้อมูล');
     return;
   }
   records = records.filter(record => String(record.id) !== String(orderId));
@@ -873,21 +906,32 @@ async function showSummary(){
   renderSummary(lastOrder);
 
   const btn = document.querySelector('#screen-form .btn-primary');
-  const savingEdit = Boolean(editingOrderId);
+  const savingEdit = hasOrderId(editingOrderId);
   btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
-  const query = editingOrderId
-    ? sb.from(TABLE_NAME).update(lastOrder).eq('id', editingOrderId).select().single()
-    : sb.from(TABLE_NAME).insert(lastOrder).select().single();
-  const { data: savedOrder, error } = await query;
+  const updatePayload = {...lastOrder};
+  const query = savingEdit
+  ? sb.from(TABLE_NAME)
+      .update(updatePayload)
+      .eq('id', editingOrderId)
+      .select()
+  : sb.from(TABLE_NAME)
+      .insert(lastOrder)
+      .select();
+
+const { data: result, error } = await query;
   btn.disabled = false; btn.textContent = savingEdit ? 'บันทึกข้อมูล' : 'ต่อไป';
   if(error){
     alert('บันทึกไม่สำเร็จ: '+translateError(error.message));
     console.error(error);
     return;
   }
+  const savedOrder = result?.[0];  if(!savedOrder){
+    alert('บันทึกไม่สำเร็จ: ไม่พบรายการที่ต้องการแก้ไขหรือไม่มีสิทธิ์แก้ไขข้อมูลในฐานข้อมูล');
+    return;
+  }
   if(savedOrder){
     lastOrder = {...lastOrder, ...savedOrder};
-    currentOrderId = savedOrder.id || currentOrderId;
+    currentOrderId = savedOrder.id ?? currentOrderId;
     renderSummary(lastOrder);
   }
   editingOrderId = null;
@@ -903,7 +947,6 @@ if(!window.supabase){
 }else{
   syncBrandLogo();
   initAuth();
-  addProduct();
   addProduct();
   restoreSignupCooldown();
   document.getElementById('signupEmail')?.addEventListener('input', restoreSignupCooldown);
