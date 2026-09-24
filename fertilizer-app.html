@@ -106,6 +106,10 @@
   .btn-primary{width:100%; background:var(--olive); border:none; border-radius:26px; padding:16px; font-weight:700; font-size:16px; cursor:pointer; color:var(--brown-deep); font-family:inherit;}
   .btn-primary:disabled{opacity:.65; cursor:not-allowed;}
 
+  .history-tabs{display:flex; gap:10px; padding:0; margin:0 0 12px; background:transparent;}
+  .history-tab{flex:1; border:none; background:var(--card); color:var(--brown); border-radius:14px 14px 0 0; padding:12px 10px; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer;}
+  .history-tab.active{background:var(--orange); color:var(--brown-deep); box-shadow:inset 0 -2px 0 rgba(74,46,31,.15);}
+
   /* Summary */
   .summary-card{background:var(--cream); border-radius:18px; padding:20px; margin:16px 20px;}
   .summary-card h3{font-size:16px; margin:0 0 12px;}
@@ -130,9 +134,10 @@
   .btn-delete:disabled{opacity:.65; cursor:not-allowed;}
   .print-header{display:none;}
   .calc-line{display:none; font-size:14px; color:var(--muted); font-weight:400;}
+  .card-added-by{font-size:16px; color:var(--muted); margin-top:6px;}
 
   @media print{
-    @page{margin:16mm;}
+    @page{margin:12mm 8mm 2mm;}
     html,body{height:auto; overflow:visible; background:#fff;}
     body{display:block; color:#000;}
     #app{max-width:none; height:auto; overflow:visible; background:#fff;}
@@ -146,7 +151,8 @@
     .print-header-title{font-size:20px; font-weight:800; color:#000;}
     .info-box{background:#fff; border:1px solid #ccc;}
     .calc-line{display:block;}
-    .btn-edit,.btn-print,.btn-delete{display:none;}
+    .btn-edit,.btn-print,.btn-delete,.btn-primary{display:none !important;}
+    .print-footer{display:block;}
   }
 
   /* Auth */
@@ -209,6 +215,10 @@
       <div class="list-head">
         <h2>รายการตั๋วปุ๋ย</h2>
         <button class="btn-add" onclick="startNewOrder()">＋ ลงทะเบียน</button>
+      </div>
+      <div class="history-tabs" aria-label="แท็บรายการชำระเงิน">
+        <button class="history-tab active" type="button" data-history-tab="pending" onclick="setHistoryTab('pending')">รอชำระเงิน</button>
+        <button class="history-tab" type="button" data-history-tab="paid" onclick="setHistoryTab('paid')">ชำระเงินแล้ว</button>
       </div>
       <div id="listWrap"></div>
     </div>
@@ -318,7 +328,7 @@
       <div class="summary-card">
         <div class="print-header">
           <img id="printLogo" alt="โลโก้ร้านค้า">
-          <div class="print-header-title">ร้านค้าตัวแทน: บริษัท ทรัพย์สินการเกษตร-2015 จำกัด</div>
+          <div class="print-header-title">บริษัท ทรัพย์สินการเกษตร-2015 จำกัด</div>
         </div>
         <h3>รายละเอียดคำสั่งซื้อ</h3>
         <div class="info-box" id="infoBox"></div>
@@ -328,8 +338,10 @@
           <tbody id="summaryRows"></tbody>
         </table>
         <div class="total-row"><span class="lab">ยอดรวมทั้งหมด</span><span class="amt" id="totalAmt">0.00</span></div>
+        <div class="print-footer" style="display:none; margin-top:18px; padding-top:12px; border-top:1px solid var(--card-line); font-size:16px; color:var(--muted);">ผู้เพิ่มรายการ: <span id="printAddedBy">—</span></div>
         <button class="btn-edit" onclick="editCurrentOrder()">✎ แก้ไข</button>
         <button type="button" class="btn-print" onclick="printSummary()">🖨 พิมพ์</button>
+        <button type="button" class="btn-primary" id="confirmPaymentBtn" onclick="confirmPayment()" style="margin-top:12px;">ยืนยันการชำระเงิน</button>
         <button type="button" class="btn-delete" id="deleteOrderBtn" onclick="deleteCurrentOrder()">🗑️ ลบรายการ</button>
       </div>
     </div>
@@ -347,6 +359,21 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let records = [];
 let pid = 0;
+let currentHistoryTab = 'pending';
+
+function normalizePaymentStatus(record){
+  const value = String(record && (record.payment_status ?? record.status ?? 'pending') || 'pending').trim().toLowerCase();
+  return value === 'paid' ? 'paid' : 'pending';
+}
+
+function setHistoryTab(tab){
+  currentHistoryTab = tab === 'paid' ? 'paid' : 'pending';
+  document.querySelectorAll('.history-tab').forEach(btn => {
+    const active = btn.dataset.historyTab === currentHistoryTab;
+    btn.classList.toggle('active', active);
+  });
+  renderList(document.getElementById('searchInput').value);
+}
 
 function statusFor(dueDateStr){
   if(!dueDateStr) return {label:'—', overdue:false};
@@ -632,6 +659,30 @@ function escapeHtml(value){
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
+const CREATOR_CACHE_KEY = 'fertilizer_creator_names_v1';
+
+function getCreatorCache(){
+  try{
+    return JSON.parse(localStorage.getItem(CREATOR_CACHE_KEY) || '{}');
+  }catch(error){
+    console.error('ไม่สามารถอ่านข้อมูลผู้เพิ่มรายการจากเครื่องได้:', error);
+    return {};
+  }
+}
+
+function creatorNameFor(record){
+  const directName = record.created_by_name || record.created_by || record.user_name || record.added_by || record.createdBy;
+  if(directName) return directName;
+  return hasOrderId(record.id) ? getCreatorCache()[String(record.id)] || '—' : '—';
+}
+
+function cacheCreatorName(recordId, name){
+  if(!hasOrderId(recordId) || !name) return;
+  const cache = getCreatorCache();
+  cache[String(recordId)] = name;
+  localStorage.setItem(CREATOR_CACHE_KEY, JSON.stringify(cache));
+}
+
 function syncBrandLogo(){
   const source = document.querySelector('.auth-logo img');
   const target = document.getElementById('homeBrandLogo');
@@ -641,15 +692,23 @@ function syncBrandLogo(){
 function renderList(filter){
   const wrap = document.getElementById('listWrap');
   const f = (filter||'').trim().toLowerCase();
-  const shown = records.filter(r=>String(r.shop_name ?? '').toLowerCase().includes(f));
-  wrap.innerHTML = shown.length ? shown.map(r=>`
+  const shown = records.filter(r => {
+    const matchesTab = normalizePaymentStatus(r) === currentHistoryTab;
+    const matchesText = String(r.shop_name ?? '').toLowerCase().includes(f);
+    return matchesTab && matchesText;
+  });
+  wrap.innerHTML = shown.length ? shown.map(r=>{
+    const addedBy = creatorNameFor(r);
+    return `
     <div class="card" onclick="showOrderDetail(${records.indexOf(r)})">
       <div class="card-top">
         <div><div class="name">${escapeHtml(r.shop_name ?? 'ไม่ระบุชื่อร้าน')}</div><div class="card-plate">รหัสรายการ: ${escapeHtml(r.id ?? '—')}</div><div class="card-plate">${escapeHtml(r.plate ?? '—')}</div></div>
         <div class="card-status">${escapeHtml(statusFor(r.due_date).label)}</div>
       </div>
       <div class="card-amount">${Number(r.total || 0).toLocaleString(undefined,{minimumFractionDigits:2})} บาท</div>
-    </div>`).join('') : '<div class="empty">ไม่พบร้านค้าที่ค้นหา</div>';
+      <div class="card-added-by">ผู้เพิ่มรายการ: ${escapeHtml(addedBy)}</div>
+    </div>`;
+  }).join('') : '<div class="empty">ไม่พบร้านค้าที่ค้นหา</div>';
 }
 
 function renderNotifications(){
@@ -660,6 +719,7 @@ function renderNotifications(){
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
   const upcoming = records.filter(record=>{
+    if(normalizePaymentStatus(record) !== 'pending') return false;
     if(!record.due_date) return false;
     const due = new Date(`${String(record.due_date).slice(0, 10)}T00:00:00`);
     return !Number.isNaN(due.getTime()) && due >= today && due <= nextWeek;
@@ -759,13 +819,16 @@ function renderSummary(order){
   const shop = order.shop_name || '—';
   const plate = order.plate || '—';
   const note = order.note || '—';
+  const addedBy = creatorNameFor(order);
   document.getElementById('infoBox').innerHTML = `
     <div class="info-row"><div class="ic">📅</div><div><div class="lab">วันที่ออกบิล</div><div class="val">${escapeHtml(bill)}</div></div></div>
     <div class="info-row"><div class="ic">📆</div><div><div class="lab">วันกำหนดชำระ</div><div class="val">${escapeHtml(due)}</div></div></div>
     <div class="info-row"><div class="ic">🏬</div><div><div class="lab">ชื่อร้านค้า</div><div class="val">${escapeHtml(shop)}</div></div></div>
     <div class="info-row"><div class="ic">🚚</div><div><div class="lab">ทะเบียนรถ</div><div class="val">${escapeHtml(plate)}</div></div></div>
+    <div class="info-row"><div class="ic">👤</div><div><div class="lab">ผู้เพิ่มรายการ</div><div class="val">${escapeHtml(addedBy)}</div></div></div>
     <div class="info-row"><div class="ic">ℹ️</div><div><div class="lab">หมายเหตุ</div><div class="val">${escapeHtml(note)}</div></div></div>
   `;
+  document.getElementById('printAddedBy').textContent = addedBy;
   const products = Array.isArray(order.products) ? order.products : [];
   const logo = document.querySelector('.auth-logo img');
   if(logo) document.getElementById('printLogo').src = logo.src;
@@ -792,8 +855,57 @@ function showOrderDetail(index){
   if(!order) return;
   lastOrder = order;
   currentOrderId = order.id;
+  const paymentBtn = document.getElementById('confirmPaymentBtn');
+  const isPaid = normalizePaymentStatus(order) === 'paid';
+  if(paymentBtn){
+    paymentBtn.textContent = isPaid ? 'ชำระเงินแล้ว' : 'ยืนยันการชำระเงิน';
+    paymentBtn.disabled = isPaid;
+    paymentBtn.style.opacity = isPaid ? '0.7' : '1';
+  }
   renderSummary(order);
   goTo('summary');
+}
+
+async function confirmPayment(){
+  const orderId = currentOrderId;
+  if(!hasOrderId(orderId)){
+    alert('ไม่พบรหัสรายการ จึงไม่สามารถยืนยันการชำระเงินได้');
+    return;
+  }
+  const paymentBtn = document.getElementById('confirmPaymentBtn');
+  if(paymentBtn){
+    paymentBtn.disabled = true;
+    paymentBtn.textContent = 'กำลังยืนยัน...';
+  }
+  const { data: updatedRows, error } = await sb
+    .from(TABLE_NAME)
+    .update({ status: 'paid' })
+    .eq('id', orderId)
+    .select();
+  if(error){
+    if(paymentBtn){
+      paymentBtn.disabled = false;
+      paymentBtn.textContent = 'ยืนยันการชำระเงิน';
+    }
+    alert('ยืนยันการชำระเงินไม่สำเร็จ: ' + translateError(error.message));
+    console.error(error);
+    return;
+  }
+  const updatedOrder = updatedRows && updatedRows[0] ? updatedRows[0] : null;
+  if(updatedOrder){
+    records = records.map(record => String(record.id) === String(updatedOrder.id) ? { ...record, ...updatedOrder, status: 'paid' } : record);
+    lastOrder = { ...lastOrder, ...updatedOrder, status: 'paid' };
+    currentOrderId = updatedOrder.id ?? currentOrderId;
+  }
+  renderList(document.getElementById('searchInput').value);
+  renderNotifications();
+  if(lastOrder){ renderSummary(lastOrder); }
+  if(paymentBtn){
+    paymentBtn.textContent = 'ชำระเงินแล้ว';
+    paymentBtn.disabled = true;
+    paymentBtn.style.opacity = '0.7';
+  }
+  alert('ยืนยันการชำระเงินแล้ว รายการจะถูกย้ายไปที่แท็บ “ชำระเงินแล้ว”');
 }
 
 function hasOrderId(value){
@@ -886,6 +998,7 @@ async function showSummary(){
   if(!validateOrder()) return;
   const billDateRaw = document.getElementById('billDate').value;
   const dueDateRaw = document.getElementById('dueDate').value;
+  const savingEdit = hasOrderId(editingOrderId);
   let total = 0;
   const products = [...document.querySelectorAll('.product-card')].map(c=>{
     const formula = c.querySelector('.p-formula').value;
@@ -896,26 +1009,30 @@ async function showSummary(){
     return {formula, qty, price, note:pnote};
   });
 
+  const { data: userData } = await sb.auth.getUser();
+  const currentUserName = userData.user?.user_metadata?.full_name
+    || (document.getElementById('profileName') ? document.getElementById('profileName').value.trim() : '');
   lastOrder = {
     bill_date: billDateRaw || null, due_date: dueDateRaw || null,
     shop_name: document.getElementById('shopName').value,
     plate: document.getElementById('plate').value.trim(),
     note: document.getElementById('orderNote').value.trim(),
-    products, total
+    products, total,
+    status: savingEdit ? normalizePaymentStatus(lastOrder || {}) : 'pending',
+    created_by_name: currentUserName || (lastOrder && lastOrder.created_by_name) || '—'
   };
   renderSummary(lastOrder);
 
   const btn = document.querySelector('#screen-form .btn-primary');
-  const savingEdit = hasOrderId(editingOrderId);
   btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
-  const updatePayload = {...lastOrder};
+  const { created_by_name: createdByName, ...orderPayload } = lastOrder;
   const query = savingEdit
   ? sb.from(TABLE_NAME)
-      .update(updatePayload)
+      .update(orderPayload)
       .eq('id', editingOrderId)
       .select()
   : sb.from(TABLE_NAME)
-      .insert(lastOrder)
+      .insert(orderPayload)
       .select();
 
 const { data: result, error } = await query;
@@ -932,6 +1049,7 @@ const { data: result, error } = await query;
   if(savedOrder){
     lastOrder = {...lastOrder, ...savedOrder};
     currentOrderId = savedOrder.id ?? currentOrderId;
+    cacheCreatorName(currentOrderId, createdByName);
     renderSummary(lastOrder);
   }
   editingOrderId = null;
