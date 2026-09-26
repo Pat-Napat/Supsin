@@ -8,7 +8,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap');
   :root{
-    --orange:#F5A85E; --orange-dark:#EE9A45; --cream:#FBF3EA; --card:#EFDFD1;
+    --orange:#F5A85E; --orange-dark:#EE9A45; --cream:#FBF3EA; --card:#EFDFD1; --next-button:#454A21;
     --card-line:#E4CDB8; --brown:#4A2E1F; --brown-deep:#3A2417; --olive:#B9C787;
     --olive-deep:#AEBE75; --gold:#B8862E; --red:#C64A3B; --ink:#2E2013; --muted:#8B7462; --fertilizer-button:#745944; --section-border:#D6C3B6; --surface-white:#fff; --registration-background:#FFB77D;
   }
@@ -47,6 +47,7 @@
   .card-top{display:flex; justify-content:space-between; align-items:flex-start;}
   .card-top .name{font-size:22px; font-weight:700;}
   .card-status{font-size:16px; font-weight:600; color:var(--red); text-align:right; max-width:130px;}
+  .card-status.is-paid{color:var(--fertilizer-button);}
   .card-plate{color:var(--muted); font-size:16px; margin-top:2px;}
   .card-amount{font-size:26px; font-weight:800; color:var(--gold); text-align:right; margin-top:10px;}
   .empty{text-align:center; color:var(--muted); margin-top:60px; font-size:16px;}
@@ -101,9 +102,8 @@
   .row-2 > div{flex:1;}
   .btn-addfert{width:100%; margin-top:16px; background:var(--fertilizer-button); color:#fff; border:none; border-radius:26px; padding:15px; font-weight:700; font-size:16px; cursor:pointer;}
 
-  .sticky-bottom{position:sticky; bottom:0; background:var(--brown-deep); padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));}
-  .sticky-bottom.is-hidden{display:none;}
   .btn-primary{width:100%; background:var(--olive); border:none; border-radius:26px; padding:16px; font-weight:700; font-size:16px; cursor:pointer; color:var(--brown-deep); font-family:inherit;}
+  .btn-next{background:var(--next-button); color:var(--surface-white);}
   .btn-primary:disabled{opacity:.65; cursor:not-allowed;}
 
   .history-tabs{display:flex; gap:10px; padding:0; margin:0 0 12px; background:transparent;}
@@ -308,9 +308,7 @@
       <datalist id="formulaOptions"></datalist>
       <div id="productList"></div>
       <button class="btn-addfert" onclick="addProduct()">＋ เพิ่มสูตรปุ๋ย</button>
-    </div>
-    <div class="sticky-bottom" id="formActions">
-      <button class="btn-primary" onclick="showSummary()">ต่อไป</button>
+      <button class="btn-primary btn-next" onclick="showSummary()" style="margin-top:16px;">ต่อไป</button>
     </div>
   </div>
 
@@ -699,11 +697,15 @@ function renderList(filter){
   });
   wrap.innerHTML = shown.length ? shown.map(r=>{
     const addedBy = creatorNameFor(r);
+    const isPaid = normalizePaymentStatus(r) === 'paid';
+    const statusLabel = isPaid
+      ? `ชำระเงินแล้ว${r.paid_at ? `เมื่อวันที่ ${paidDateText(r.paid_at)}` : ''}`
+      : statusFor(r.due_date).label;
     return `
     <div class="card" onclick="showOrderDetail(${records.indexOf(r)})">
       <div class="card-top">
         <div><div class="name">${escapeHtml(r.shop_name ?? 'ไม่ระบุชื่อร้าน')}</div><div class="card-plate">รหัสรายการ: ${escapeHtml(r.id ?? '—')}</div><div class="card-plate">${escapeHtml(r.plate ?? '—')}</div></div>
-        <div class="card-status">${escapeHtml(statusFor(r.due_date).label)}</div>
+        <div class="card-status${isPaid ? ' is-paid' : ''}">${escapeHtml(statusLabel)}</div>
       </div>
       <div class="card-amount">${Number(r.total || 0).toLocaleString(undefined,{minimumFractionDigits:2})} บาท</div>
       <div class="card-added-by">ผู้เพิ่มรายการ: ${escapeHtml(addedBy)}</div>
@@ -737,19 +739,6 @@ function renderNotifications(){
 }
 document.getElementById('searchInput').addEventListener('input', e=>renderList(e.target.value));
 
-const formActions = document.getElementById('formActions');
-document.getElementById('screen-form').addEventListener('focusin', e=>{
-  if(e.target.matches('input, select, textarea')) formActions.classList.add('is-hidden');
-});
-document.getElementById('screen-form').addEventListener('focusout', ()=>{
-  setTimeout(()=>{
-    const active = document.activeElement;
-    if(!active || !active.closest('#screen-form input, #screen-form select, #screen-form textarea')){
-      formActions.classList.remove('is-hidden');
-    }
-  }, 0);
-});
-
 function addProduct(){
   pid++;
   const id = pid;
@@ -782,6 +771,13 @@ function fmtDate(v){
   const d = new Date(`${dateValue}T00:00:00`);
   if(Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+}
+
+function paidDateText(value){
+  if(!value) return '';
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
 }
 
 function dueDateText(dueDateStr){
@@ -836,9 +832,13 @@ function renderSummary(order){
   const plate = order.plate || '—';
   const note = order.note || '—';
   const addedBy = creatorNameFor(order);
+  const paymentStatus = normalizePaymentStatus(order) === 'paid'
+    ? `ชำระเงินแล้ว${order.paid_at ? `เมื่อวันที่ ${paidDateText(order.paid_at)}` : ''}`
+    : null;
   document.getElementById('infoBox').innerHTML = `
     <div class="info-row"><div class="ic">📅</div><div><div class="lab">วันที่ออกบิล</div><div class="val">${escapeHtml(bill)}</div></div></div>
     <div class="info-row"><div class="ic">📆</div><div><div class="lab">วันกำหนดชำระ</div><div class="val">${escapeHtml(due)}</div></div></div>
+    ${paymentStatus ? `<div class="info-row"><div class="ic">✓</div><div><div class="lab">สถานะการชำระเงิน</div><div class="val">${escapeHtml(paymentStatus)}</div></div></div>` : ''}
     <div class="info-row"><div class="ic">🏬</div><div><div class="lab">ชื่อร้านค้า</div><div class="val">${escapeHtml(shop)}</div></div></div>
     <div class="info-row"><div class="ic">🚚</div><div><div class="lab">ทะเบียนรถ</div><div class="val">${escapeHtml(plate)}</div></div></div>
     <div class="info-row"><div class="ic">👤</div><div><div class="lab">ผู้เพิ่มรายการ</div><div class="val">${escapeHtml(addedBy)}</div></div></div>
@@ -874,9 +874,9 @@ function showOrderDetail(index){
   const paymentBtn = document.getElementById('confirmPaymentBtn');
   const isPaid = normalizePaymentStatus(order) === 'paid';
   if(paymentBtn){
-    paymentBtn.textContent = isPaid ? 'ชำระเงินแล้ว' : 'ยืนยันการชำระเงิน';
-    paymentBtn.disabled = isPaid;
-    paymentBtn.style.opacity = isPaid ? '0.7' : '1';
+    paymentBtn.hidden = isPaid;
+    paymentBtn.textContent = 'ยืนยันการชำระเงิน';
+    paymentBtn.disabled = false;
   }
   renderSummary(order);
   goTo('summary');
@@ -892,10 +892,11 @@ async function confirmPayment(){
   if(paymentBtn){
     paymentBtn.disabled = true;
     paymentBtn.textContent = 'กำลังยืนยัน...';
+    paymentBtn.hidden = false;
   }
   const { data: updatedRows, error } = await sb
     .from(TABLE_NAME)
-    .update({ status: 'paid' })
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
     .eq('id', orderId)
     .select();
   if(error){
@@ -917,9 +918,7 @@ async function confirmPayment(){
   renderNotifications();
   if(lastOrder){ renderSummary(lastOrder); }
   if(paymentBtn){
-    paymentBtn.textContent = 'ชำระเงินแล้ว';
-    paymentBtn.disabled = true;
-    paymentBtn.style.opacity = '0.7';
+    paymentBtn.hidden = true;
   }
   alert('ยืนยันการชำระเงินแล้ว รายการจะถูกย้ายไปที่แท็บ “ชำระเงินแล้ว”');
 }
