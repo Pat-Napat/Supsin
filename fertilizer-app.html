@@ -800,6 +800,7 @@ function dueDateText(dueDateStr){
 let lastOrder = null;
 let currentOrderId = null;
 let editingOrderId = null;
+let isSavingOrder = false;
 
 function validateOrder(){
   const required = [
@@ -1010,7 +1011,12 @@ async function deleteCurrentOrder(){
 }
 
 async function showSummary(){
-  if(!validateOrder()) return;
+  if(isSavingOrder || !validateOrder()) return;
+  isSavingOrder = true;
+  const btn = document.querySelector('#screen-form .btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+  try{
   const billDateRaw = document.getElementById('billDate').value;
   const dueDateRaw = document.getElementById('dueDate').value;
   const savingEdit = hasOrderId(editingOrderId);
@@ -1038,8 +1044,6 @@ async function showSummary(){
   };
   renderSummary(lastOrder);
 
-  const btn = document.querySelector('#screen-form .btn-primary');
-  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
   const { created_by_name: createdByName, ...orderPayload } = lastOrder;
   const query = savingEdit
   ? sb.from(TABLE_NAME)
@@ -1051,7 +1055,6 @@ async function showSummary(){
       .select();
 
 const { data: result, error } = await query;
-  btn.disabled = false; btn.textContent = savingEdit ? 'บันทึกข้อมูล' : 'ต่อไป';
   if(error){
     alert('บันทึกไม่สำเร็จ: '+translateError(error.message));
     console.error(error);
@@ -1068,9 +1071,13 @@ const { data: result, error } = await query;
     renderSummary(lastOrder);
   }
   editingOrderId = null;
-  btn.textContent = 'ต่อไป';
   await loadRecords();
   goTo('summary');
+  }finally{
+    isSavingOrder = false;
+    btn.disabled = false;
+    btn.textContent = hasOrderId(editingOrderId) ? 'บันทึกข้อมูล' : 'ต่อไป';
+  }
 }
 
 if(!window.supabase){
