@@ -718,14 +718,18 @@ function renderNotifications(){
   if(!wrap) return;
   const today = new Date();
   today.setHours(0,0,0,0);
-  const nextWeek = new Date(today);
-  nextWeek.setDate(nextWeek.getDate() + 7);
+  const alertWindowEnd = new Date(today);
+  alertWindowEnd.setDate(alertWindowEnd.getDate() + 3);
+
   const upcoming = records.filter(record=>{
     if(normalizePaymentStatus(record) !== 'pending') return false;
     if(!record.due_date) return false;
     const due = new Date(`${String(record.due_date).slice(0, 10)}T00:00:00`);
-    return !Number.isNaN(due.getTime()) && due >= today && due <= nextWeek;
+    if(Number.isNaN(due.getTime())) return false;
+    due.setHours(0,0,0,0);
+    return due <= alertWindowEnd;
   });
+
   wrap.innerHTML = upcoming.length ? upcoming.map(record=>{
     const index = records.indexOf(record);
     const due = String(record.due_date).slice(0, 10);
@@ -735,7 +739,7 @@ function renderNotifications(){
       <div class="due">กำหนดชำระ ${escapeHtml(dueDateText(due))}</div>
       <div class="card-added-by">ผู้เพิ่มรายการ: ${escapeHtml(addedBy)}</div>
     </div>`;
-  }).join('') : '<div class="empty notification-empty" style="margin-top:0;">ไม่มีรายการถึงกำหนดชำระเร็วๆนี้</div>';
+  }).join('') : '<div class="empty notification-empty" style="margin-top:0;">ไม่มีรายการที่ใกล้กำหนดชำระภายใน 3 วัน หรือถึงกำหนดชำระแล้ว</div>';
 }
 document.getElementById('searchInput').addEventListener('input', e=>renderList(e.target.value));
 
