@@ -150,9 +150,9 @@
     .print-header img{width:64px; height:64px; object-fit:contain;}
     .print-header-title{font-size:20px; font-weight:800; color:#000;}
     .info-box{background:#fff; border:1px solid #ccc;}
+    .print-hide{display:none !important;}
     .calc-line{display:block;}
     .btn-edit,.btn-print,.btn-delete,.btn-primary{display:none !important;}
-    .print-footer{display:block;}
   }
 
   /* Auth */
@@ -336,7 +336,6 @@
           <tbody id="summaryRows"></tbody>
         </table>
         <div class="total-row"><span class="lab">ยอดรวมทั้งหมด</span><span class="amt" id="totalAmt">0.00</span></div>
-        <div class="print-footer" style="display:none; margin-top:18px; padding-top:12px; border-top:1px solid var(--card-line); font-size:16px; color:var(--muted);">ผู้เพิ่มรายการ: <span id="printAddedBy">—</span></div>
         <button class="btn-edit" onclick="editCurrentOrder()">✎ แก้ไข</button>
         <button type="button" class="btn-print" onclick="printSummary()">🖨 พิมพ์</button>
         <button type="button" class="btn-primary" id="confirmPaymentBtn" onclick="confirmPayment()" style="margin-top:12px;">ยืนยันการชำระเงิน</button>
@@ -845,10 +844,9 @@ function renderSummary(order){
     ${paymentStatus ? `<div class="info-row"><div class="ic">✓</div><div><div class="lab">สถานะการชำระเงิน</div><div class="val">${escapeHtml(paymentStatus)}</div></div></div>` : ''}
     <div class="info-row"><div class="ic">🏬</div><div><div class="lab">ชื่อร้านค้า</div><div class="val">${escapeHtml(shop)}</div></div></div>
     <div class="info-row"><div class="ic">🚚</div><div><div class="lab">ทะเบียนรถ</div><div class="val">${escapeHtml(plate)}</div></div></div>
-    <div class="info-row"><div class="ic">👤</div><div><div class="lab">ผู้เพิ่มรายการ</div><div class="val">${escapeHtml(addedBy)}</div></div></div>
+    <div class="info-row print-hide"><div class="ic">👤</div><div><div class="lab">ผู้เพิ่มรายการ</div><div class="val">${escapeHtml(addedBy)}</div></div></div>
     <div class="info-row"><div class="ic">ℹ️</div><div><div class="lab">หมายเหตุ</div><div class="val">${escapeHtml(note)}</div></div></div>
   `;
-  document.getElementById('printAddedBy').textContent = addedBy;
   const products = Array.isArray(order.products) ? order.products : [];
   const logo = document.querySelector('.auth-logo img');
   if(logo) document.getElementById('printLogo').src = logo.src;
