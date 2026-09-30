@@ -131,7 +131,9 @@
   .total-row .amt{font-size:22px; font-weight:800; color:var(--gold);}
   .btn-edit{width:100%; background:var(--brown); color:#fff; border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:20px; cursor:pointer; font-family:inherit; font-size:16px;}
   .btn-print{width:100%; min-height:48px; background:var(--orange); color:var(--brown-deep); border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:12px; cursor:pointer; touch-action:manipulation; font-family:inherit; font-size:16px;}
-  .btn-save-image{width:100%; min-height:48px; background:var(--orange-dark); color:var(--brown-deep); border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:12px; cursor:pointer; touch-action:manipulation; font-family:inherit; font-size:16px;}
+  .btn-save-image{width:100%; min-height:48px; background:var(--orange-dark); color:var(--brown-deep); border:none; border-radius:26px; padding:15px; font-weight:700; margin-top:12px; cursor:pointer; touch-action:manipulation; font-family:inherit; font-size:16px; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn-save-image svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .summary-action-divider{height:1px; background:var(--section-border); margin-top:14px;}
   .btn-delete{width:100%; background:none; border:2px solid var(--red); color:var(--red); border-radius:26px; padding:13px; font-weight:700; margin-top:12px; cursor:pointer; font-family:inherit; font-size:16px;}
   .btn-delete:disabled{opacity:.65; cursor:not-allowed;}
   .print-header{display:none;}
@@ -163,7 +165,7 @@
     .print-qr-block{text-align:center; font-size:12px; font-weight:600;}
     .print-hide{display:none !important;}
     .calc-line{display:block;}
-    .btn-edit,.btn-print,.btn-save-image,.btn-delete,.btn-primary{display:none !important;}
+    .btn-edit,.btn-print,.btn-save-image,.btn-delete,.btn-primary,.summary-action-divider{display:none !important;}
   }
 
   /* Auth */
@@ -362,9 +364,12 @@
           </div>
         </div>
         <button class="btn-edit" onclick="editCurrentOrder()">✎ แก้ไข</button>
+        <div class="summary-action-divider" aria-hidden="true"></div>
         <button type="button" class="btn-print" onclick="printSummary()">🖨 พิมพ์</button>
-        <button type="button" class="btn-save-image" id="saveSummaryImageBtn" onclick="downloadSummaryImage()">บันทึกภาพ</button>
+        <button type="button" class="btn-save-image" id="saveSummaryImageBtn" onclick="downloadSummaryImage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v4h14v-4"/></svg>บันทึกภาพ</button>
+        <div class="summary-action-divider" aria-hidden="true"></div>
         <button type="button" class="btn-primary" id="confirmPaymentBtn" onclick="confirmPayment()" style="margin-top:12px;">ยืนยันการชำระเงิน</button>
+        <div class="summary-action-divider" aria-hidden="true"></div>
         <button type="button" class="btn-delete" id="deleteOrderBtn" onclick="deleteCurrentOrder()">🗑️ ลบรายการ</button>
       </div>
     </div>
@@ -912,15 +917,16 @@ async function downloadSummaryImage(){
     const canvas = document.createElement('canvas');
     const width = 1000;
     const margin = 64;
-    const productHeight = Math.max(1, products.length) * 150;
+    const productHeight = Math.max(1, products.length) * 180;
     canvas.width = width;
-    canvas.height = 1120 + productHeight;
+    canvas.height = 1250 + productHeight;
     const context = canvas.getContext('2d');
     const styles = getComputedStyle(document.documentElement);
     const ink = styles.getPropertyValue('--ink').trim();
     const muted = styles.getPropertyValue('--muted').trim();
     const line = styles.getPropertyValue('--card-line').trim();
     const gold = styles.getPropertyValue('--gold').trim();
+    const cream = styles.getPropertyValue('--cream').trim();
     const brandSource = document.querySelector('.auth-logo img')?.src;
     const [brandLogo, scbLogo, kbankLogo, qrImage] = await Promise.all([
       loadCanvasImage(brandSource),
@@ -933,14 +939,16 @@ async function downloadSummaryImage(){
     context.fillRect(0, 0, width, canvas.height);
     context.fillStyle = ink;
     context.textBaseline = 'top';
-    if(brandLogo) context.drawImage(brandLogo, margin, 52, 92, 92);
-    context.font = '700 26px Prompt, sans-serif';
-    context.fillText('บริษัท ทรัพย์สินการเกษตร (2015) จำกัด', margin + 112, 58);
-    context.font = '400 16px Prompt, sans-serif';
-    context.fillText('เลขที่ผู้เสียภาษี 035-5558000-152', margin + 112, 98);
-    context.fillText('ที่อยู่ 227/1 ถนนวารีราชเดช ตำบลในเมือง อำเภอเมือง จังหวัดยโสธร 35000', margin + 112, 124, width - margin * 2 - 112);
+    if(brandLogo) context.drawImage(brandLogo, margin, 32, 64, 64);
+    context.font = '800 20px Prompt, sans-serif';
+    context.fillStyle = '#000000';
+    context.fillText('บริษัท ทรัพย์สินการเกษตร (2015) จำกัด', margin + 76, 30);
+    context.font = '400 13px Prompt, sans-serif';
+    context.fillStyle = ink;
+    context.fillText('เลขที่ผู้เสียภาษี 035-5558000-152', margin + 76, 57);
+    context.fillText('ที่อยู่ 227/1 ถนนวารีราชเดช ตำบลในเมือง อำเภอเมือง จังหวัดยโสธร 35000', margin + 76, 78, width - margin * 2 - 76);
 
-    let y = 188;
+    let y = 132;
     const drawRule = (top)=>{
       context.strokeStyle = line;
       context.lineWidth = 2;
@@ -968,34 +976,67 @@ async function downloadSummaryImage(){
       return Math.max(1, lineCount + 1);
     };
 
-    context.font = '700 22px Prompt, sans-serif';
+    context.font = '700 20px Prompt, sans-serif';
     context.fillStyle = ink;
     context.fillText('รายละเอียดคำสั่งซื้อ', margin, y);
-    y += 48;
+    y += 38;
     const orderDetails = [
-      ['วันที่ออกบิล', fmtDate(lastOrder.bill_date)],
-      ['วันกำหนดชำระ', fmtDate(lastOrder.due_date)],
-      ['ชื่อร้านค้า', lastOrder.shop_name || '—'],
-      ['ทะเบียนรถ', lastOrder.plate || '—'],
-      ['หมายเหตุ', lastOrder.note || '—']
+      ['📅', 'วันที่ออกบิล', fmtDate(lastOrder.bill_date)],
+      ['📆', 'วันกำหนดชำระ', fmtDate(lastOrder.due_date)],
+      ['🏬', 'ชื่อร้านค้า', lastOrder.shop_name || '—'],
+      ['🚚', 'ทะเบียนรถ', lastOrder.plate || '—'],
+      ['ℹ️', 'หมายเหตุ', lastOrder.note || '—']
     ];
     if(normalizePaymentStatus(lastOrder) === 'paid'){
-      orderDetails.splice(2, 0, ['สถานะการชำระเงิน', `ชำระเงินแล้ว${lastOrder.paid_at ? `เมื่อวันที่ ${paidDateText(lastOrder.paid_at)}` : ''}`]);
+      orderDetails.splice(2, 0, ['✓', 'สถานะการชำระเงิน', `ชำระเงินแล้ว${lastOrder.paid_at ? `เมื่อวันที่ ${paidDateText(lastOrder.paid_at)}` : ''}`]);
     }
-    orderDetails.forEach(([label, value])=>{
-      context.font = '600 17px Prompt, sans-serif';
-      context.fillStyle = muted;
-      context.fillText(label, margin + 12, y);
-      const lines = drawWrapped(value, margin + 250, y, width - margin * 2 - 262, '600 17px Prompt, sans-serif', ink);
-      y += Math.max(42, lines * 28 + 12);
-      drawRule(y - 6);
+    const infoBoxTop = y;
+    const infoBoxX = margin;
+    const infoBoxWidth = width - margin * 2;
+    let infoBoxHeight = 16;
+    const infoRowHeights = orderDetails.map(([, , value])=>{
+      context.font = '600 16px Prompt, sans-serif';
+      let currentLine = '';
+      let lineCount = 1;
+      for(const character of String(value ?? '—')){
+        const candidate = currentLine + character;
+        if(currentLine && context.measureText(candidate).width > infoBoxWidth - 300){
+          currentLine = character;
+          lineCount++;
+        }else currentLine = candidate;
+      }
+      return Math.max(58, lineCount * 24 + 30);
     });
+    infoBoxHeight += infoRowHeights.reduce((sum, rowHeight)=>sum + rowHeight, 0) + 16;
+    context.fillStyle = '#FFFFFF';
+    context.fillRect(infoBoxX, infoBoxTop, infoBoxWidth, infoBoxHeight);
+    context.strokeStyle = '#CCCCCC';
+    context.lineWidth = 1;
+    context.strokeRect(infoBoxX, infoBoxTop, infoBoxWidth, infoBoxHeight);
+    y += 16;
+    orderDetails.forEach(([icon, label, value], index)=>{
+      context.fillStyle = cream;
+      context.beginPath();
+      context.roundRect(margin + 16, y + 4, 38, 38, 10);
+      context.fill();
+      context.font = '16px Prompt, sans-serif';
+      context.textAlign = 'center';
+      context.fillStyle = ink;
+      context.fillText(icon, margin + 35, y + 13);
+      context.textAlign = 'left';
+      context.font = '400 16px Prompt, sans-serif';
+      context.fillStyle = muted;
+      context.fillText(label, margin + 70, y + 2);
+      drawWrapped(value, margin + 70, y + 25, infoBoxWidth - 102, '700 16px Prompt, sans-serif', ink);
+      y += infoRowHeights[index];
+      if(index < orderDetails.length - 1) drawRule(y);
+    });
+    y = infoBoxTop + infoBoxHeight + 24;
 
-    y += 24;
-    context.font = '700 22px Prompt, sans-serif';
+    context.font = '700 16px Prompt, sans-serif';
     context.fillStyle = ink;
     context.fillText('รายละเอียดสินค้า', margin, y);
-    y += 46;
+    y += 34;
     context.font = '600 16px Prompt, sans-serif';
     context.fillStyle = muted;
     context.fillText('สูตรปุ๋ย', margin + 12, y);
@@ -1007,10 +1048,10 @@ async function downloadSummaryImage(){
     drawRule(y);
     y += 12;
     products.forEach(product=>{
-      const formulaLines = drawWrapped(product.formula || '—', margin + 12, y, 470, '700 17px Prompt, sans-serif', ink);
+      const formulaLines = drawWrapped(product.formula || '—', margin + 12, y, 470, '700 16px Prompt, sans-serif', ink);
       const qty = Number(product.qty || 0);
       const price = Number(product.price || 0);
-      context.font = '600 17px Prompt, sans-serif';
+      context.font = '600 16px Prompt, sans-serif';
       context.fillStyle = ink;
       context.textAlign = 'right';
       context.fillText(qty.toFixed(2), 720, y);
@@ -1018,9 +1059,12 @@ async function downloadSummaryImage(){
       context.textAlign = 'left';
       let noteLines = 0;
       if(product.note){
-        noteLines = drawWrapped(`หมายเหตุ: ${product.note}`, margin + 12, y + formulaLines * 28, 470, '400 15px Prompt, sans-serif', muted);
+        noteLines = drawWrapped(`หมายเหตุ: ${product.note}`, margin + 12, y + formulaLines * 24, 470, '400 16px Prompt, sans-serif', muted);
       }
-      y += Math.max(62, (formulaLines + noteLines) * 28 + 20);
+      context.font = '400 14px Prompt, sans-serif';
+      context.fillStyle = muted;
+      context.fillText(`ยอดรวม: ${qty} × ${price} = ${(qty * price).toLocaleString()}`, margin + 12, y + formulaLines * 24 + noteLines * 24);
+      y += Math.max(62, (formulaLines + noteLines + 1) * 24 + 18);
       drawRule(y);
       y += 12;
     });
@@ -1031,10 +1075,10 @@ async function downloadSummaryImage(){
       y += 50;
     }
 
-    context.font = '700 20px Prompt, sans-serif';
+    context.font = '700 16px Prompt, sans-serif';
     context.fillStyle = ink;
     context.fillText('ยอดรวมทั้งหมด', margin + 12, y + 16);
-    context.font = '800 26px Prompt, sans-serif';
+    context.font = '800 22px Prompt, sans-serif';
     context.fillStyle = gold;
     context.textAlign = 'right';
     context.fillText(`${Number(lastOrder.total || 0).toLocaleString(undefined,{minimumFractionDigits:2})} บาท`, width - margin, y + 12);
@@ -1043,27 +1087,39 @@ async function downloadSummaryImage(){
     drawRule(y);
     y += 24;
 
-    context.font = '700 19px Prompt, sans-serif';
+    context.font = '700 16px Prompt, sans-serif';
     context.fillStyle = ink;
     context.fillText('ช่องทางการชำระเงิน', margin, y);
+    const qrWidth = 180;
+    const qrHeight = qrImage ? qrWidth * qrImage.height / qrImage.width : 0;
+    const qrX = width - margin - qrWidth;
+    const qrCaptionY = y;
+    const qrY = qrCaptionY + 28;
+    context.font = '600 12px Prompt, sans-serif';
+    context.fillStyle = ink;
+    context.textAlign = 'center';
+    context.fillText('หรือสแกนจ่ายผ่าน QR code', qrX + qrWidth / 2, qrCaptionY);
+    context.textAlign = 'left';
     y += 42;
     const drawBankRow = (logo, text)=>{
       if(logo) context.drawImage(logo, margin, y, 24, 24);
-      context.font = '400 16px Prompt, sans-serif';
+      context.font = '400 13px Prompt, sans-serif';
       context.fillStyle = ink;
       context.fillText(text, margin + 36, y + 1);
       y += 36;
     };
     drawBankRow(scbLogo, '056-254-102-8 ธนาคารไทยพาณิชย์');
     drawBankRow(kbankLogo, '207-3-89212-3 ธนาคารกสิกรไทย');
-    context.font = '600 15px Prompt, sans-serif';
-    context.fillStyle = ink;
-    context.textAlign = 'center';
-    context.fillText('หรือสแกนจ่ายผ่าน QR code', width - margin - 90, y - 72);
-    context.textAlign = 'left';
-    if(qrImage) context.drawImage(qrImage, width - margin - 180, y - 44, 180, 180);
+    if(qrImage){
+      context.drawImage(qrImage, qrX, qrY, qrWidth, qrHeight);
+      y = Math.max(y, qrY + qrHeight);
+    }
 
-    const blob = await new Promise((resolve, reject)=>canvas.toBlob(imageBlob=>imageBlob ? resolve(imageBlob) : reject(new Error('JPEG export failed')), 'image/jpeg', 0.92));
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = width;
+    outputCanvas.height = Math.ceil(y + margin);
+    outputCanvas.getContext('2d').drawImage(canvas, 0, 0, width, outputCanvas.height, 0, 0, width, outputCanvas.height);
+    const blob = await new Promise((resolve, reject)=>outputCanvas.toBlob(imageBlob=>imageBlob ? resolve(imageBlob) : reject(new Error('JPEG export failed')), 'image/jpeg', 0.92));
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const shopName = String(lastOrder.shop_name || 'order').replace(/[^\wก-๙-]+/g, '-');
