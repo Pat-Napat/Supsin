@@ -441,17 +441,32 @@ async function loadRecords(){
     console.error(error);
     return;
   }
-  records = (data || []).sort((a, b)=>{
-    const aTime = a.due_date ? new Date(`${String(a.due_date).slice(0, 10)}T00:00:00`).getTime() : NaN;
-    const bTime = b.due_date ? new Date(`${String(b.due_date).slice(0, 10)}T00:00:00`).getTime() : NaN;
-    if(!Number.isFinite(aTime)) return Number.isFinite(bTime) ? 1 : 0;
-    if(!Number.isFinite(bTime)) return -1;
-    return aTime - bTime;
-  });
+  records = (data || []).sort(compareOrderRecords);
   renderShopOptions();
   renderFormulaOptions();
   renderList(document.getElementById('searchInput').value);
   renderNotifications();
+}
+
+function compareOrderRecords(a, b){
+  const dueTime = order=>{
+    const dueDate = new Date(`${String(order.due_date || '').slice(0, 10)}T00:00:00`);
+    return Number.isNaN(dueDate.getTime()) ? Infinity : dueDate.getTime();
+  };
+  const aDueTime = dueTime(a);
+  const bDueTime = dueTime(b);
+  if(aDueTime < bDueTime) return -1;
+  if(aDueTime > bDueTime) return 1;
+
+  const shopOrder = String(a.shop_name || '').localeCompare(String(b.shop_name || ''), 'th', {numeric:true, sensitivity:'base'});
+  if(shopOrder) return shopOrder;
+
+  const productCodes = order=>(Array.isArray(order.products) ? order.products : [])
+    .map(product=>String(product?.formula || '').trim())
+    .filter(Boolean)
+    .sort((left, right)=>left.localeCompare(right, 'th', {numeric:true, sensitivity:'base'}))
+    .join('\u0000');
+  return productCodes(a).localeCompare(productCodes(b), 'th', {numeric:true, sensitivity:'base'});
 }
 
 function goTo(name){
