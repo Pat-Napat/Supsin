@@ -139,11 +139,12 @@
   .print-header{display:none;}
   .print-company-details{font-size:13px; line-height:1.55; color:var(--ink);}
   .print-payment{display:none;}
+  .print-signature{display:none;}
   .calc-line{display:none; font-size:14px; color:var(--muted); font-weight:400;}
   .card-added-by{font-size:16px; color:var(--muted); margin-top:6px;}
 
   @media print{
-    @page{margin:12mm 8mm 2mm;}
+    @page{size:A4 portrait; margin:12mm 8mm 2mm;}
     html,body{height:auto; overflow:visible; background:#fff;}
     body{display:block; color:#000;}
     #app{max-width:none; height:auto; overflow:visible; background:#fff;}
@@ -163,6 +164,10 @@
     .print-bank-logo{width:24px; height:24px; object-fit:contain; flex:0 0 24px;}
     .print-qr{display:block; width:180px; height:180px; margin:8px auto 0; object-fit:contain;}
     .print-qr-block{text-align:center; font-size:12px; font-weight:600;}
+    .print-signature{display:flex; justify-content:flex-end; margin-top:24px; break-inside:avoid; page-break-inside:avoid; color:var(--ink);}
+    .print-signature-block{width:260px; text-align:center; font-size:13px;}
+    .print-signature-line{height:40px; border-bottom:1px dashed var(--ink);}
+    .print-signature-meta{display:flex; justify-content:space-between; margin-top:8px;}
     .print-hide{display:none !important;}
     .calc-line{display:block;}
     .btn-edit,.btn-print,.btn-save-image,.btn-delete,.btn-primary,.summary-action-divider{display:none !important;}
@@ -352,6 +357,17 @@
           <tbody id="summaryRows"></tbody>
         </table>
         <div class="total-row"><span class="lab">ยอดรวมทั้งหมด</span><span class="amt" id="totalAmt">0.00</span></div>
+        <br>
+        <br>
+        <div class="print-signature">
+          <div class="print-signature-block">
+            <div>ในนาม บริษัท ทรัพย์สินการเกษตร (2015) จำกัด</div>
+            <br>
+            <div class="print-signature-line"></div>
+            <br>
+            <div><span>ผู้วางบิล</span></div>
+          </div>
+        </div>
         <div class="print-payment">
           <div>
             <h4 class="print-payment-title">ช่องทางการชำระเงิน</h4>
@@ -363,6 +379,7 @@
             <img class="print-qr" src="assets/payment-qr.JPG" alt="" onerror="this.hidden=true">
           </div>
         </div>
+        
         <button class="btn-edit" onclick="editCurrentOrder()">✎ แก้ไข</button>
         <div class="summary-action-divider" aria-hidden="true"></div>
         <button type="button" class="btn-print" onclick="printSummary()">🖨 พิมพ์</button>
@@ -949,12 +966,13 @@ async function downloadSummaryImage(){
     context.fillText('ที่อยู่ 227/1 ถนนวารีราชเดช ตำบลในเมือง อำเภอเมือง จังหวัดยโสธร 35000', margin + 76, 78, width - margin * 2 - 76);
 
     let y = 132;
-    const drawRule = (top)=>{
+    const drawRule = (top, lineWidth = 2)=>{
       context.strokeStyle = line;
-      context.lineWidth = 2;
+      context.lineWidth = lineWidth;
       context.beginPath();
-      context.moveTo(margin, top);
-      context.lineTo(width - margin, top);
+      const strokeTop = top + (lineWidth % 2 ? 0.5 : 0);
+      context.moveTo(margin, strokeTop);
+      context.lineTo(width - margin, strokeTop);
       context.stroke();
     };
     const drawWrapped = (text, x, top, maxWidth, font, color)=>{
@@ -1008,11 +1026,8 @@ async function downloadSummaryImage(){
       return Math.max(58, lineCount * 24 + 30);
     });
     infoBoxHeight += infoRowHeights.reduce((sum, rowHeight)=>sum + rowHeight, 0) + 16;
-    context.fillStyle = '#FFFFFF';
+    context.fillStyle = cream;
     context.fillRect(infoBoxX, infoBoxTop, infoBoxWidth, infoBoxHeight);
-    context.strokeStyle = '#CCCCCC';
-    context.lineWidth = 1;
-    context.strokeRect(infoBoxX, infoBoxTop, infoBoxWidth, infoBoxHeight);
     y += 16;
     orderDetails.forEach(([icon, label, value], index)=>{
       context.fillStyle = cream;
@@ -1029,11 +1044,11 @@ async function downloadSummaryImage(){
       context.fillText(label, margin + 70, y + 2);
       drawWrapped(value, margin + 70, y + 25, infoBoxWidth - 102, '700 16px Prompt, sans-serif', ink);
       y += infoRowHeights[index];
-      if(index < orderDetails.length - 1) drawRule(y);
+      if(index < orderDetails.length - 1) drawRule(y, 1);
     });
     y = infoBoxTop + infoBoxHeight + 24;
 
-    context.font = '700 16px Prompt, sans-serif';
+    context.font = '700 20px Prompt, sans-serif';
     context.fillStyle = ink;
     context.fillText('รายละเอียดสินค้า', margin, y);
     y += 34;
@@ -1087,6 +1102,28 @@ async function downloadSummaryImage(){
     drawRule(y);
     y += 24;
 
+    const signatureWidth = 260;
+    const signatureX = width - margin - signatureWidth;
+    context.font = '400 13px Prompt, sans-serif';
+    context.fillStyle = ink;
+    context.textAlign = 'center';
+    context.fillText('ในนาม บริษัท ทรัพย์สินการเกษตร (2015) จำกัด', signatureX + signatureWidth / 2, y);
+    y += 36;
+    context.strokeStyle = ink;
+    context.lineWidth = 1;
+    context.setLineDash([4, 4]);
+    context.beginPath();
+    context.moveTo(signatureX, y + 40);
+    context.lineTo(signatureX + signatureWidth, y + 40);
+    context.stroke();
+    context.setLineDash([]);
+    y += 56;
+    context.fillText('ผู้วางบิล', signatureX + signatureWidth / 2, y);
+    context.textAlign = 'left';
+    y += 46;
+    drawRule(y);
+    y += 22;
+
     context.font = '700 16px Prompt, sans-serif';
     context.fillStyle = ink;
     context.fillText('ช่องทางการชำระเงิน', margin, y);
@@ -1116,9 +1153,25 @@ async function downloadSummaryImage(){
     }
 
     const outputCanvas = document.createElement('canvas');
-    outputCanvas.width = width;
-    outputCanvas.height = Math.ceil(y + margin);
-    outputCanvas.getContext('2d').drawImage(canvas, 0, 0, width, outputCanvas.height, 0, 0, width, outputCanvas.height);
+    outputCanvas.width = 1000;
+    outputCanvas.height = 1414;
+    const outputContext = outputCanvas.getContext('2d');
+    outputContext.fillStyle = '#FFFFFF';
+    outputContext.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+    const contentHeight = Math.ceil(y + margin);
+    const fitScale = Math.min(
+      (outputCanvas.width - margin * 2) / width,
+      (outputCanvas.height - margin * 2) / contentHeight
+    );
+    const renderedWidth = width * fitScale;
+    const renderedHeight = contentHeight * fitScale;
+    outputContext.drawImage(
+      canvas,
+      0, 0, width, contentHeight,
+      (outputCanvas.width - renderedWidth) / 2,
+      (outputCanvas.height - renderedHeight) / 2,
+      renderedWidth, renderedHeight
+    );
     const blob = await new Promise((resolve, reject)=>outputCanvas.toBlob(imageBlob=>imageBlob ? resolve(imageBlob) : reject(new Error('JPEG export failed')), 'image/jpeg', 0.92));
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
