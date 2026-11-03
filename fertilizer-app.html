@@ -44,8 +44,12 @@
   .list-head h2{font-size:22px; margin:0; font-weight:800;}
   .btn-add{background:var(--brown); color:#fff; border:none; border-radius:22px; padding:12px 18px; font-weight:600; font-size:16px; display:flex; align-items:center; gap:6px; cursor:pointer;}
   .card{background:var(--card); border-radius:16px; padding:18px; margin-bottom:14px; cursor:pointer;}
+  .card.selected{outline:2px solid #454A21; box-shadow:0 0 0 3px rgba(69,74,33,.12);}
+  .card-select{width:20px; height:20px; accent-color:#454A21; flex-shrink:0; cursor:pointer;}
   .card-top{display:flex; justify-content:space-between; align-items:flex-start;}
-  .card-top .name{font-size:22px; font-weight:700;}
+  .card-top > div:first-child{display:flex; align-items:flex-start; gap:10px; min-width:0;}
+  .card-top .card-select{margin-top:4px;}
+  .card-top .name{font-size:22px; font-weight:700; line-height:1.2;}
   .card-status{font-size:16px; font-weight:600; color:var(--red); text-align:right; max-width:130px;}
   .card-status.is-paid{color:var(--fertilizer-button);}
   .card-plate{color:var(--muted); font-size:16px; margin-top:2px;}
@@ -98,7 +102,7 @@
   select.field{appearance:none; -webkit-appearance:none;}
   .product-card{background:var(--surface-white); border:1px solid var(--section-border); border-radius:16px; padding:18px; margin-top:14px; position:relative;}
   .product-head{display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:16px; margin-bottom:4px;}
-  .del-btn{background:none; border:none; color:var(--red); font-size:18px; cursor:pointer; padding:4px;}
+  .del-btn{background:none; border:none; color:var(--red); font-size:24px; cursor:pointer; padding:4px; line-height:1;}
   .row-2{display:flex; gap:12px;}
   .row-2 > div{flex:1;}
   .btn-addfert{width:100%; margin-top:16px; background:var(--fertilizer-button); color:#fff; border:none; border-radius:26px; padding:15px; font-weight:700; font-size:16px; cursor:pointer;}
@@ -106,6 +110,11 @@
   .btn-primary{width:100%; background:var(--olive); border:none; border-radius:26px; padding:16px; font-weight:700; font-size:16px; cursor:pointer; color:var(--brown-deep); font-family:inherit;}
   .btn-next{background:var(--next-button); color:var(--surface-white);}
   .btn-primary:disabled{opacity:.65; cursor:not-allowed;}
+  .batch-toolbar{display:none; gap:10px; justify-content:flex-end; align-items:center; margin:0 0 12px;}
+  .batch-selection-text{font-size:14px; font-weight:700; color:var(--brown-deep); margin-right:auto; white-space:nowrap;}
+  .batch-action-btn{width:auto !important; padding:10px 18px !important; white-space:nowrap !important; height:38px !important; min-height:38px !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; margin-top:0 !important; font-size:12px !important; border-radius:18px !important;}
+  .batch-action-btn.btn-secondary{background:#fff; border:1px solid #454A21; color:#454A21;}
+  .batch-action-btn.btn-primary{background:var(--olive); border:1px solid #454A21; color:var(--brown-deep);}
 
   .history-tabs{display:flex; gap:10px; padding:0; margin:0 0 12px; background:transparent;}
   .history-tab{flex:1; border:none; background:var(--card); color:var(--brown); border-radius:14px 14px 0 0; padding:12px 10px; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer;}
@@ -126,6 +135,10 @@
   table.prod-table td{padding:10px 0; border-top:1px solid var(--card-line); font-weight:600;}
   .prod-name{font-weight:700;}
   .prod-note{font-size:16px; color:var(--muted); font-weight:400;}
+  .summary-plate-group td{background:#EFDFD1; border-top:none; padding:10px 12px; font-weight:700; color:var(--brown-deep);}
+  @media print{
+    .summary-plate-group td{background:#EFDFD1 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
   .total-row{display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding-top:12px; border-top:2px solid var(--card-line);}
   .total-row .lab{font-weight:700;}
   .total-row .amt{font-size:22px; font-weight:800; color:var(--gold);}
@@ -158,12 +171,7 @@
     .print-header-title{font-size:20px; font-weight:800; color:#000;}
     .print-company-details{font-size:13px; line-height:1.5; color:var(--ink);}
     .info-box{background:#fff; border:1px solid #ccc;}
-    .print-payment{display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-top:22px; padding-top:14px; border-top:1px solid var(--section-border); break-inside:avoid; page-break-inside:avoid; color:var(--ink);}
-    .print-payment-title{font-size:16px; font-weight:700; margin:0 0 8px;}
-    .print-bank-row{display:flex; align-items:center; gap:8px; margin:5px 0; font-size:13px;}
-    .print-bank-logo{width:24px; height:24px; object-fit:contain; flex:0 0 24px;}
-    .print-qr{display:block; width:180px; height:180px; margin:8px auto 0; object-fit:contain;}
-    .print-qr-block{text-align:center; font-size:12px; font-weight:600;}
+    .print-payment{display:none !important;}
     .print-signature{display:flex; justify-content:flex-end; margin-top:24px; break-inside:avoid; page-break-inside:avoid; color:var(--ink);}
     .print-signature-block{width:260px; text-align:center; font-size:13px;}
     .print-signature-line{height:40px; border-bottom:1px dashed var(--ink);}
@@ -237,6 +245,11 @@
       <div class="history-tabs" aria-label="แท็บรายการชำระเงิน">
         <button class="history-tab active" type="button" data-history-tab="pending" onclick="setHistoryTab('pending')">รอชำระเงิน</button>
         <button class="history-tab" type="button" data-history-tab="paid" onclick="setHistoryTab('paid')">ชำระเงินแล้ว</button>
+      </div>
+      <div class="batch-toolbar" id="batchToolbar">
+        <div class="batch-selection-text" id="batchSelectionText">0 รายการถูกเลือก</div>
+        <button type="button" class="btn-secondary batch-action-btn" onclick="clearSelectedOrders()">ล้าง</button>
+        <button type="button" class="btn-primary batch-action-btn" onclick="showCombinedSummary()">รวมบิล</button>
       </div>
       <div id="listWrap"></div>
     </div>
@@ -383,7 +396,6 @@
         <button class="btn-edit" onclick="editCurrentOrder()">✎ แก้ไข</button>
         <div class="summary-action-divider" aria-hidden="true"></div>
         <button type="button" class="btn-print" onclick="printSummary()">🖨 พิมพ์</button>
-        <button type="button" class="btn-save-image" id="saveSummaryImageBtn" onclick="downloadSummaryImage()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v4h14v-4"/></svg>บันทึกภาพ</button>
         <div class="summary-action-divider" aria-hidden="true"></div>
         <button type="button" class="btn-primary" id="confirmPaymentBtn" onclick="confirmPayment()" style="margin-top:12px;">ยืนยันการชำระเงิน</button>
         <div class="summary-action-divider" aria-hidden="true"></div>
@@ -478,6 +490,16 @@ function showMsg(id, text, type){
   const el = document.getElementById(id);
   el.textContent = text;
   el.className = 'form-msg ' + type;
+
+  if(id === 'orderMsg' || id === 'signupMsg' || id === 'signinMsg' || id === 'profileMsg'){
+    const screen = el.closest('.screen');
+    if(screen){
+      const formContent = screen.querySelector('.content');
+      if(formContent) {
+        formContent.scrollTop = 0;
+      }
+    }
+  }
 }
 
 function translateError(message){
@@ -749,6 +771,124 @@ function syncBrandLogo(){
   if(source && target) target.src = source.src;
 }
 
+function syncBatchToolbar(){
+  const toolbar = document.getElementById('batchToolbar');
+  const text = document.getElementById('batchSelectionText');
+  if(!toolbar) return;
+  if(text){
+    text.textContent = `${selectedOrderIds.size} รายการถูกเลือก`;
+  }
+  toolbar.style.display = selectedOrderIds.size >= 2 ? 'flex' : 'none';
+}
+
+function toggleOrderSelection(orderId, event){
+  if(event) event.stopPropagation();
+  const key = String(orderId);
+  if(selectedOrderIds.has(key)) selectedOrderIds.delete(key);
+  else selectedOrderIds.add(key);
+  renderList(document.getElementById('searchInput').value);
+  syncBatchToolbar();
+}
+
+function clearSelectedOrders(){
+  selectedOrderIds.clear();
+  renderList(document.getElementById('searchInput').value);
+  syncBatchToolbar();
+}
+
+function buildCombinedOrder(orders, currentUserName = null){
+  const aggregated = new Map();
+  const grouped = new Map();
+  const shopNames = [...new Set(orders.map(order => String(order.shop_name || '').trim()).filter(Boolean))];
+  const combinedShopName = shopNames.length === 1 ? shopNames[0] : shopNames.length > 1 ? 'รวมบิลหลายรายการ' : '—';
+
+  orders.forEach(order => {
+    const products = Array.isArray(order.products) ? order.products : [];
+    const plate = String(order.plate || '').trim() || '—';
+    if(!grouped.has(plate)) grouped.set(plate, new Map());
+
+    products.forEach(product => {
+      const formula = String(product?.formula || '—').trim() || '—';
+      const note = String(product?.note || '').trim();
+      const key = `${formula}::${note}`;
+      const qty = Number(product?.qty || 0);
+      const price = Number(product?.price || 0);
+
+      const existing = aggregated.get(key) || { formula, note, qty: 0, price };
+      existing.qty += qty;
+      if(!existing.price && price) existing.price = price;
+      aggregated.set(key, existing);
+
+      const plateGroup = grouped.get(plate);
+      const plateItem = plateGroup.get(key) || { formula, note, qty: 0, price };
+      plateItem.qty += qty;
+      if(!plateItem.price && price) plateItem.price = price;
+      plateGroup.set(key, plateItem);
+    });
+  });
+
+  const products = [...aggregated.values()].map(item => ({
+    formula: item.formula,
+    note: item.note,
+    qty: Number(item.qty || 0),
+    price: Number(item.price || 0),
+    total: Number(item.qty || 0) * Number(item.price || 0)
+  }));
+
+  const groupedProducts = [...grouped.entries()].map(([plate, plateMap]) => ({
+    plate,
+    items: [...plateMap.values()].map(item => ({
+      formula: item.formula,
+      note: item.note,
+      qty: Number(item.qty || 0),
+      price: Number(item.price || 0),
+      total: Number(item.qty || 0) * Number(item.price || 0)
+    }))
+  }));
+
+  const total = products.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const latestBillDate = orders.slice().sort((a, b) => (b.bill_date || '').localeCompare(a.bill_date || ''))[0]?.bill_date || new Date().toISOString().slice(0, 10);
+  const latestDueDate = orders.slice().sort((a, b) => (b.due_date || '').localeCompare(a.due_date || ''))[0]?.due_date || latestBillDate;
+  return {
+    id: `combined-${Date.now()}`,
+    shop_name: combinedShopName,
+    plate: orders.map(order => String(order.plate || '').trim()).filter(Boolean).join(', '),
+    note: `รวม ${orders.length} รายการ`,
+    bill_date: latestBillDate,
+    due_date: latestDueDate,
+    total,
+    products,
+    grouped_products: groupedProducts,
+    created_by_name: currentUserName || 'user'
+  };
+}
+
+async function getCurrentUserDisplayName(){
+  const profileField = document.getElementById('profileName');
+  const value = profileField ? profileField.value.trim() : '';
+  if(value) return value;
+
+  try{
+    const { data } = await sb.auth.getUser();
+    return data?.user?.user_metadata?.full_name || 'user';
+  }catch(error){
+    return 'user';
+  }
+}
+
+async function showCombinedSummary(){
+  const chosen = records.filter(record => selectedOrderIds.has(String(record.id)));
+  if(chosen.length < 2){
+    alert('กรุณาเลือกอย่างน้อย 2 รายการเพื่อรวมบิล');
+    return;
+  }
+
+  const combinedOrder = buildCombinedOrder(chosen, await getCurrentUserDisplayName());
+  lastOrder = combinedOrder;
+  renderSummary(combinedOrder);
+  goTo('summary');
+}
+
 function renderList(filter){
   const wrap = document.getElementById('listWrap');
   const f = (filter||'').trim().toLowerCase();
@@ -760,14 +900,18 @@ function renderList(filter){
   wrap.innerHTML = shown.length ? shown.map(r=>{
     const addedBy = creatorNameFor(r);
     const isPaid = normalizePaymentStatus(r) === 'paid';
+    const isSelected = selectedOrderIds.has(String(r.id));
     const totalTons = (Array.isArray(r.products) ? r.products : []).reduce((sum, product)=>sum + (Number(product.qty) || 0), 0);
     const statusLabel = isPaid
       ? `ชำระเงินแล้ว${r.paid_at ? `เมื่อวันที่ ${paidDateText(r.paid_at)}` : ''}`
       : statusFor(r.due_date).label;
     return `
-    <div class="card" onclick="showOrderDetail(${records.indexOf(r)})">
+    <div class="card${isSelected ? ' selected' : ''}" onclick="showOrderDetail(${records.indexOf(r)})" data-order-id="${escapeHtml(String(r.id ?? ''))}">
       <div class="card-top">
-        <div><div class="name">${escapeHtml(r.shop_name ?? 'ไม่ระบุชื่อร้าน')}</div><div class="card-plate">${escapeHtml(r.plate ?? '—')}</div></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" class="card-select" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleOrderSelection('${escapeHtml(String(r.id ?? ''))}', event);" aria-label="เลือกรายการ ${escapeHtml(r.shop_name ?? 'ร้านค้า')}">
+          <div><div class="name">${escapeHtml(r.shop_name ?? 'ไม่ระบุชื่อร้าน')}</div><div class="card-plate">${escapeHtml(r.plate ?? '—')}</div></div>
+        </div>
         <div class="card-status${isPaid ? ' is-paid' : ''}">${escapeHtml(statusLabel)}</div>
       </div>
       <div class="card-tonnage">จำนวนรวม ${totalTons.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})} ตัน</div>
@@ -776,6 +920,7 @@ function renderList(filter){
       <div class="card-plate">วันที่ออกบิล: ${escapeHtml(fmtDate(r.bill_date))}</div>
     </div>`;
   }).join('') : '<div class="empty">ไม่พบร้านค้าที่ค้นหา</div>';
+  syncBatchToolbar();
 }
 
 function renderNotifications(){
@@ -798,10 +943,11 @@ function renderNotifications(){
   wrap.innerHTML = upcoming.length ? upcoming.map(record=>{
     const index = records.indexOf(record);
     const due = String(record.due_date).slice(0, 10);
+    const dueLabel = statusFor(record.due_date).label;
     const addedBy = creatorNameFor(record);
     return `<div class="notification-card" onclick="showOrderDetail(${index})">
       <div class="name">${escapeHtml(record.shop_name ?? 'ไม่ระบุชื่อร้าน')}</div>
-      <div class="due">กำหนดชำระ ${escapeHtml(dueDateText(due))}</div>
+      <div class="due">${escapeHtml(dueLabel)}</div>
       <div class="card-added-by">ผู้เพิ่มรายการ: ${escapeHtml(addedBy)}</div>
     </div>`;
   }).join('') : '<div class="empty notification-empty" style="margin-top:0;">ไม่มีรายการที่ใกล้กำหนดชำระภายใน 3 วัน หรือถึงกำหนดชำระแล้ว</div>';
@@ -816,12 +962,12 @@ function addProduct(){
   div.id = 'prod-'+id;
   div.innerHTML = `
     <div class="product-head"><span>${document.querySelectorAll('.product-card').length+1}</span>
-      <button class="del-btn" onclick="removeProduct(${id})">🗑</button></div>
+      <button class="del-btn" onclick="removeProduct(${id})">✕</button></div>
     <label>สูตรปุ๋ย</label>
     <input class="field p-formula" list="formulaOptions" placeholder="พิมพ์หรือเลือกสูตรปุ๋ย">
     <div class="row-2">
-      <div><label>จำนวน (ตัน)</label><input type="number" class="field p-qty"></div>
-      <div><label>ราคา (บาท/ตัน)</label><input type="number" class="field p-price"></div>
+      <div><label>จำนวน (ตัน)</label><input type="number" class="field p-qty" min="0" step="1" oninput="if(this.value < 0) this.value = 0"></div>
+      <div><label>ราคา (บาท/ตัน)</label><input type="number" class="field p-price" min="0" step="1000" oninput="if(this.value < 0) this.value = 0"></div>
     </div>
     <label>หมายเหตุ (ไม่บังคับ)</label>
     <input class="field p-note" placeholder="">
@@ -866,6 +1012,7 @@ let lastOrder = null;
 let currentOrderId = null;
 let editingOrderId = null;
 let isSavingOrder = false;
+let selectedOrderIds = new Set();
 
 function validateOrder(){
   const required = [
@@ -885,6 +1032,15 @@ function validateOrder(){
     ].forEach(([selector, label])=>{
       if(!card.querySelector(selector).value.trim()) missing.push([selector, label]);
     });
+
+    const qty = Number(card.querySelector('.p-qty').value);
+    const price = Number(card.querySelector('.p-price').value);
+    if(Number.isFinite(qty) && qty <= 0){
+      missing.push(['.p-qty', `จำนวนรายการที่ ${index + 1} ต้องมากกว่า 0`]);
+    }
+    if(Number.isFinite(price) && price <= 0){
+      missing.push(['.p-price', `ราคาต่อหน่วยรายการที่ ${index + 1} ต้องมากกว่า 0`]);
+    }
   });
   if(missing.length){
     showMsg('orderMsg', `กรุณากรอกข้อมูลให้ครบทุกช่อง: ${missing.map(([, label])=>label).join(', ')}`, 'error');
@@ -914,15 +1070,25 @@ function renderSummary(order){
     <div class="info-row"><div class="ic">ℹ️</div><div><div class="lab">หมายเหตุ</div><div class="val">${escapeHtml(note)}</div></div></div>
   `;
   const products = Array.isArray(order.products) ? order.products : [];
+  const groupedProducts = Array.isArray(order.grouped_products) && order.grouped_products.length
+    ? order.grouped_products
+    : [{ plate: plate, items: products }];
   const logo = document.querySelector('.auth-logo img');
   if(logo) document.getElementById('printLogo').src = logo.src;
-  document.getElementById('summaryRows').innerHTML = products.map(p=>{
-    const qty = Number(p.qty || 0);
-    const price = Number(p.price || 0);
-    const amount = qty * price;
-    return `<tr><td><div class="prod-name">${escapeHtml(p.formula || '—')}</div>${p.note ? `<div class="prod-note">หมายเหตุ: ${escapeHtml(p.note)}</div>` : ''}<div class="calc-line">ยอดรวม: ${qty} × ${price} = ${amount.toLocaleString()}</div></td><td>${qty.toFixed(2)}</td><td>${price.toLocaleString()}</td></tr>`;
-  }
-  ).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);">ยังไม่มีสินค้า</td></tr>';
+
+  const renderedRows = groupedProducts.map(group => {
+    const items = Array.isArray(group.items) ? group.items : [];
+    const groupHeader = `<tr class="summary-plate-group"><td colspan="3">ทะเบียนรถ: ${escapeHtml(group.plate || '—')}</td></tr>`;
+    const itemRows = items.map(p => {
+      const qty = Number(p.qty || 0);
+      const price = Number(p.price || 0);
+      const amount = qty * price;
+      return `<tr><td><div class="prod-name">${escapeHtml(p.formula || '—')}</div>${p.note ? `<div class="prod-note">หมายเหตุ: ${escapeHtml(p.note)}</div>` : ''}<div class="calc-line">ยอดรวม: ${qty} × ${price} = ${amount.toLocaleString()}</div></td><td>${qty.toFixed(2)}</td><td>${price.toLocaleString()}</td></tr>`;
+    }).join('');
+    return groupHeader + itemRows;
+  }).join('');
+
+  document.getElementById('summaryRows').innerHTML = renderedRows || '<tr><td colspan="3" style="text-align:center;color:var(--muted);">ยังไม่มีสินค้า</td></tr>';
   document.getElementById('totalAmt').textContent = Number(order.total || 0).toLocaleString(undefined,{minimumFractionDigits:2});
 }
 
@@ -1275,12 +1441,19 @@ function hasOrderId(value){
   return value !== null && value !== undefined && value !== '';
 }
 
+function getTodayISO(){
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 10);
+}
+
 function startNewOrder(){
   editingOrderId = null;
   currentOrderId = null;
   lastOrder = null;
-  document.getElementById('billDate').value = '';
-  document.getElementById('dueDate').value = '';
+  document.getElementById('billDate').value = getTodayISO();
+  document.getElementById('dueDate').value = getTodayISO();
   document.getElementById('shopName').value = '';
   document.getElementById('plate').value = '';
   document.getElementById('orderNote').value = '';
